@@ -97,29 +97,30 @@ class MainActivity : AppCompatActivity() {
             start()
             isRecording = true
         }
-        monitorAmplitudeAndSendAlert()
-
-    }
-
-    private fun monitorAmplitudeAndSendAlert() {
         val handler = Handler(Looper.getMainLooper())
         val policy = StrictMode.ThreadPolicy.Builder().permitAll().build()
         StrictMode.setThreadPolicy(policy)
 
-        handler.postDelayed({
+        handler.post {
             while(isRecording){
                 var amp = recorder?.maxAmplitude
 
                 when {
-                    amp!! >= AMPLITUDE_DIFF_LOW -> { createRequest("A low noise has been detected") }
-                    amp!! >= AMPLITUDE_DIFF_MED -> { createRequest("A medium noise has been detected")}
-                    amp!! >= AMPLITUDE_DIFF_HIGH -> { createRequest("A loud noise has been detected")}
+                    amp!! >= AMPLITUDE_DIFF_HIGH -> { createRequest("A loud noise has been detected", amp)}
+                    amp!! >= AMPLITUDE_DIFF_MED -> { createRequest("A medium noise has been detected", amp)}
+                    amp!! >= AMPLITUDE_DIFF_LOW -> { createRequest("A low noise has been detected", amp) }
+
+
                 }
+
+                Thread.sleep(5000)
             }
-        }, 10000)
+        }
+
     }
 
-    private fun createRequest(title: String) {
+
+    private fun createRequest(title: String, amp: Int) {
         val queue = Volley.newRequestQueue(this)
         val url = "https://fcm.googleapis.com/fcm/send"
 
@@ -129,7 +130,7 @@ class MainActivity : AppCompatActivity() {
 
         data.put("extra_information", "This is some extra information")
         notification.put("title", title)
-        notification.put("body","This is the notification message")
+        notification.put("body", "Sound has an amplitude of: $amp")
 
         body.put("to", "/topics/alert")
         body.put("data", data)
